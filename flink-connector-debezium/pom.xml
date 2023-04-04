@@ -36,9 +36,18 @@ under the License.
         </dependency>
         <dependency>
             <groupId>io.debezium</groupId>
+            <artifactId>debezium-core-1.6.4</artifactId>
+            <version>${debezium.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium</groupId>
             <artifactId>debezium-embedded</artifactId>
             <version>${debezium.version}</version>
             <exclusions>
+                <exclusion>
+                    <groupId>io.debezium</groupId>
+                    <artifactId>debezium-core</artifactId>
+                </exclusion>
                 <exclusion>
                     <artifactId>kafka-log4j-appender</artifactId>
                     <groupId>org.apache.kafka</groupId>

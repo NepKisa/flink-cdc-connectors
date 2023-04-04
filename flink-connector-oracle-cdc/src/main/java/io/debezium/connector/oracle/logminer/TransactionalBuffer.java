@@ -18,12 +18,7 @@ package io.debezium.connector.oracle.logminer;
 
 import io.debezium.DebeziumException;
 import io.debezium.annotation.NotThreadSafe;
-import io.debezium.connector.oracle.BlobChunkList;
-import io.debezium.connector.oracle.OracleConnectorConfig;
-import io.debezium.connector.oracle.OracleDatabaseSchema;
-import io.debezium.connector.oracle.OracleOffsetContext;
-import io.debezium.connector.oracle.OracleStreamingChangeEventSourceMetrics;
-import io.debezium.connector.oracle.Scn;
+import io.debezium.connector.oracle.*;
 import io.debezium.connector.oracle.logminer.parser.SelectLobParser;
 import io.debezium.connector.oracle.logminer.valueholder.LogMinerDmlEntry;
 import io.debezium.pipeline.ErrorHandler;
@@ -36,17 +31,12 @@ import org.apache.kafka.connect.errors.DataException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -382,7 +372,8 @@ public final class TransactionalBuffer implements AutoCloseable {
         LOGGER.trace("COMMIT, {}, smallest SCN: {}", debugMessage, smallestScn);
         try {
             int counter = transaction.events.size();
-            for (LogMinerEvent event : transaction.events) {
+            for (int i = 0; i < transaction.events.size(); i++) {
+                LogMinerEvent event = transaction.events.get(i);
                 if (!context.isRunning()) {
                     return false;
                 }
@@ -1165,7 +1156,56 @@ public final class TransactionalBuffer implements AutoCloseable {
         private Transaction(String transactionId, Scn firstScn) {
             this.transactionId = transactionId;
             this.firstScn = firstScn;
-            this.events = new ArrayList<>();
+            this.events = new ArrayList<LogMinerEvent>() {
+                @Override
+                public int size() {
+                    return RocksDbCache.getCounter().get(transactionId) == null ? 0 : RocksDbCache.getCounter().get(transactionId);
+                }
+
+                @Override
+                public boolean isEmpty() {
+                    return !(size() > 0);
+                }
+
+                @Override
+                public LogMinerEvent get(int index) {
+                    return (LogMinerEvent) (RocksDbCache.get(transactionId + index));
+                }
+
+                @Override
+                public boolean add(LogMinerEvent logMinerEvent) {
+                    try {
+                        RocksDbCache.put(transactionId + size(), logMinerEvent);
+                        RocksDbCache.getCounter().put(transactionId, size() + 1);
+                        return true;
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                    return false;
+                }
+
+                @Override
+                public LogMinerEvent remove(int index) {
+                    LogMinerEvent logMinerEvent = get(index);
+                    RocksDbCache.delete(transactionId + index);
+                    return logMinerEvent;
+                }
+
+                @Override
+                public boolean removeIf(Predicate<? super LogMinerEvent> filter) {
+                    Objects.requireNonNull(filter);
+                    boolean removed = false;
+                    while (size() > 0) {
+                        LogMinerEvent each = get(0);
+                        if (filter.test(each)) {
+                            remove(0);
+                            removed = true;
+                        }
+                    }
+                    return removed;
+                }
+
+            };
             this.lastScn = firstScn;
             this.eventIds = 0;
         }
@@ -1186,7 +1226,7 @@ public final class TransactionalBuffer implements AutoCloseable {
     }
 
     /** Base class for all possible LogMiner events. */
-    private static class LogMinerEvent {
+    private static class LogMinerEvent implements Serializable {
         private final int operation;
         private final LogMinerDmlEntry entry;
         private final Scn scn;

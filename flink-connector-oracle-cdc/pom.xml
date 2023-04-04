@@ -28,11 +28,16 @@ under the License.
     <packaging>jar</packaging>
 
     <dependencies>
-
         <dependency>
             <groupId>com.ververica</groupId>
             <artifactId>flink-cdc-base</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>7.1.2</version>
         </dependency>
 
         <!-- Debezium dependencies -->
@@ -40,17 +45,17 @@ under the License.
             <groupId>com.ververica</groupId>
             <artifactId>flink-connector-debezium</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>kafka-log4j-appender</artifactId>
-                    <groupId>org.apache.kafka</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>io.debezium</groupId>
-            <artifactId>debezium-connector-oracle</artifactId>
+            <artifactId>debezium-core-1.6.4</artifactId>
+            <version>${debezium.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-connector-oracle-1.6.4</artifactId>
             <version>${debezium.version}</version>
         </dependency>
 
@@ -63,13 +68,13 @@ under the License.
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-core</artifactId>
-            <version>${debezium.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.debezium</groupId>-->
+<!--            <artifactId>debezium-core</artifactId>-->
+<!--            <version>${debezium.version}</version>-->
+<!--            <type>test-jar</type>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
         <!-- test dependencies on Flink -->
 

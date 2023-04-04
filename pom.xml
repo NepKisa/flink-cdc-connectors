@@ -31,6 +31,8 @@ under the License.
     <packaging>pom</packaging>
 
     <modules>
+        <module>debezium-core-1.6.4</module>
+        <module>debezium-connector-oracle-1.6.4</module>
         <module>flink-cdc-base</module>
         <module>flink-connector-debezium</module>
         <module>flink-connector-test-util</module>
@@ -51,6 +53,7 @@ under the License.
         <module>flink-sql-connector-tidb-cdc</module>
         <module>flink-sql-connector-db2-cdc</module>
         <module>flink-cdc-e2e-tests</module>
+        <module>flink-cdc-server</module>
     </modules>
 
     <licenses>
@@ -384,7 +387,7 @@ under the License.
                     </systemPropertyVariables>
                     <!-- Prevent ORA-01882: timezone region not found errors due to the Oracle DB
                          does not understanding some time zone which used in Ubuntu OS -->
-                    <argLine>-Xms256m -Xmx2048m -Dmvn.forkNumber=${surefire.forkNumber}
+                    <argLine>-Xms100m -Xmx100m -Dmvn.forkNumber=${surefire.forkNumber}
                         -XX:+UseG1GC -Doracle.jdbc.timezoneAsRegion=false
                     </argLine>
                 </configuration>

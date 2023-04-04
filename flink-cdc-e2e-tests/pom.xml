@@ -60,6 +60,11 @@ under the License.
             <version>db2jcc4</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.11.2</version>
+        </dependency>
 
         <!-- CDC connectors test utils -->
         <dependency>
