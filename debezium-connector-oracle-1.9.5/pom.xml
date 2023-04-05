@@ -1,0 +1,546 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>flink-cdc-connectors</artifactId>
+        <groupId>com.ververica</groupId>
+        <version>2.3-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.debezium</groupId>
+    <artifactId>debezium-connector-oracle-1.9.5</artifactId>
+    <version>1.9.5.Final</version>
+    <name>Debezium Connector for Oracle</name>
+    <packaging>jar</packaging>
+
+    <properties>
+        <debezium.version>1.9.5.Final</debezium.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-core-1.9.5</artifactId>
+            <version>${debezium.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-ddl-parser</artifactId>
+            <version>${debezium.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.debezium</groupId>
+                    <artifactId>debezium-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>connect-api</artifactId>
+            <scope>provided</scope>
+            <version>3.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>21.1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+              <groupId>org.antlr</groupId>
+              <artifactId>antlr4-runtime</artifactId>
+            <version>4.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-core</artifactId>
+            <version>12.1.6.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-client-hotrod</artifactId>
+            <version>12.1.6.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan.protostream</groupId>
+            <artifactId>protostream-processor</artifactId>
+            <version>4.4.1.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.instantclient</groupId>
+            <artifactId>xstreams</artifactId>
+            <version>21.7.0.0.0</version>
+        </dependency>
+<!--        &lt;!&ndash; Testing &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.debezium</groupId>-->
+<!--            <artifactId>debezium-core</artifactId>-->
+<!--            <type>test-jar</type>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.debezium</groupId>-->
+<!--            <artifactId>debezium-embedded</artifactId>-->
+<!--            <type>test-jar</type>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.debezium</groupId>-->
+<!--            <artifactId>debezium-embedded</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>ch.qos.logback</groupId>-->
+<!--            <artifactId>logback-classic</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>junit</groupId>-->
+<!--            <artifactId>junit</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.easytesting</groupId>-->
+<!--            <artifactId>fest-assert</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.awaitility</groupId>-->
+<!--            <artifactId>awaitility</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.mockito</groupId>-->
+<!--            <artifactId>mockito-core</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; Required by VerifyRecord &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.confluent</groupId>-->
+<!--            <artifactId>kafka-connect-avro-converter</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; Used for unit testing with Kafka &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.kafka</groupId>-->
+<!--            <artifactId>kafka_${version.kafka.scala}</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+    </dependencies>
+
+<!--    <properties>-->
+<!--        <adapter.name>logminer</adapter.name>-->
+<!--        <log.mining.buffer.type.name>memory</log.mining.buffer.type.name>-->
+<!--        <version.oracle.server>19.3.0</version.oracle.server>-->
+
+<!--        &lt;!&ndash;-->
+<!--        By default, the Oracle module's tests are not executed but only compiled.-->
+<!--        In order to execute tests, the profile "oracle-tests" must be explicitly toggled.-->
+<!--        &ndash;&gt;-->
+<!--        <skipITs>true</skipITs>-->
+
+<!--        &lt;!&ndash;-->
+<!--        Specify properties that will be used for setting up the integration tests' Docker container.-->
+<!--        Note that the `dockerhost.ip` property is computed from the IP addrses of DOCKER_HOST, which will-->
+<!--        work on all platforms.  We'll set some of these system properties during integration testing.-->
+<!--        &ndash;&gt;-->
+
+<!--        &lt;!&ndash; This should be kept in sync with the infinispan dependencies used &ndash;&gt;-->
+<!--        <version.infinispan.server>12.1</version.infinispan.server>-->
+<!--        <oracle.infinispan.host>${docker.host.address}</oracle.infinispan.host>-->
+<!--        <oracle.infinispan.image>infinispan/server:${version.infinispan.server}</oracle.infinispan.image>-->
+<!--        <oracle.infinispan.port>11222</oracle.infinispan.port>-->
+<!--        <oracle.infinispan.user>admin</oracle.infinispan.user>-->
+<!--        <oracle.infinispan.password>admin</oracle.infinispan.password>-->
+<!--        <docker.skip>false</docker.skip>-->
+<!--        <docker.showLogs>true</docker.showLogs>-->
+<!--        <connector.assembly.ref>connector-distribution</connector.assembly.ref>-->
+<!--    </properties>-->
+
+<!--    <build>-->
+<!--        <resources>-->
+<!--            &lt;!&ndash; Apply the properties set in the POM to the resource files &ndash;&gt;-->
+<!--            <resource>-->
+<!--                <filtering>true</filtering>-->
+<!--                <directory>src/main/resources</directory>-->
+<!--                <includes>-->
+<!--                    <include>*</include>-->
+<!--                    <include>**/*</include>-->
+<!--                </includes>-->
+<!--            </resource>-->
+<!--        </resources>-->
+<!--        <testResources>-->
+<!--            <testResource>-->
+<!--                <directory>src/test/resources</directory>-->
+<!--                <filtering>true</filtering>-->
+<!--                <includes>-->
+<!--                    <include>*</include>-->
+<!--                    <include>**/*</include>-->
+<!--                </includes>-->
+<!--            </testResource>-->
+<!--        </testResources>-->
+
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    &lt;!&ndash;-->
+<!--                    By default we exclude the Xstream sources.-->
+<!--                    To enable Xstream support, use the "oracle-xstream" profile-->
+<!--                     &ndash;&gt;-->
+<!--                    <excludes>-->
+<!--                        <exclude>**/io/debezium/connector/oracle/xstream/**</exclude>-->
+<!--                    </excludes>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <systemProperties combine.children="append">-->
+<!--                        <property>-->
+<!--                            <name>database.connection.adapter</name>-->
+<!--                            <value>${adapter.name}</value>-->
+<!--                        </property>-->
+<!--                        <property>-->
+<!--                            <name>log.mining.buffer.type</name>-->
+<!--                            <value>${log.mining.buffer.type.name}</value>-->
+<!--                        </property>-->
+<!--                    </systemProperties>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-failsafe-plugin</artifactId>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>integration-test</id>-->
+<!--                        <goals>-->
+<!--                            <goal>integration-test</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                    <execution>-->
+<!--                        <id>verify</id>-->
+<!--                        <goals>-->
+<!--                            <goal>verify</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    <skipTests>${skipITs}</skipTests>-->
+<!--                    <enableAssertions>true</enableAssertions>-->
+<!--                    <forkCount>1</forkCount>-->
+<!--                    <argLine>-Djava.library.path=${instantclient.dir} -Ddebezium.embedded.shutdown.pause.before.interrupt.ms=20000</argLine>-->
+<!--                    <systemPropertyVariables>-->
+<!--                        <database.connection.adapter>${adapter.name}</database.connection.adapter>-->
+<!--                        <log.mining.buffer.type>${log.mining.buffer.type.name}</log.mining.buffer.type>-->
+<!--                    </systemPropertyVariables>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
+
+<!--    &lt;!&ndash;-->
+<!--    Define several useful profiles-->
+<!--    &ndash;&gt;-->
+<!--    <profiles>-->
+<!--        &lt;!&ndash;-->
+<!--        Profile: oracle-tests-->
+<!--        This specifically enables the execution of all integration tests.-->
+<!--        By default, integration tests are only compiled but are not executed.-->
+<!--        &ndash;&gt;-->
+<!--        <profile>-->
+<!--            <id>oracle-tests</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <properties>-->
+<!--                <skipITs>false</skipITs>-->
+<!--            </properties>-->
+<!--        </profile>-->
+<!--        &lt;!&ndash;-->
+<!--        Profile: oracle-xstream-->
+<!--        This is a multi-faceted profile that controls several key points:-->
+<!--            1. Adds the Oracle Instant Client & Xstream dependencies to the module-->
+<!--            2. Includes the Xstream sources into the build, which are otherwise excluded-->
+<!--            3. Enables the ability to execute the test suite for the Xstream adapter-->
+<!--        &ndash;&gt;-->
+<!--        <profile>-->
+<!--            <id>oracle-xstream</id>-->
+<!--            <properties>-->
+<!--                &lt;!&ndash; Point (3) enables the xstream adapter for tests &ndash;&gt;-->
+<!--                <adapter.name>xstream</adapter.name>-->
+<!--            </properties>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            &lt;!&ndash; Point (1) add the Xstream dependencies &ndash;&gt;-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>com.oracle.instantclient</groupId>-->
+<!--                    <artifactId>xstreams</artifactId>-->
+<!--                    <scope>provided</scope>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                        <configuration combine.self="override">-->
+<!--                            &lt;!&ndash; Point (2) add the Xstream sources back into the module &ndash;&gt;-->
+<!--                            <includes>-->
+<!--                                <include>**</include>-->
+<!--                            </includes>-->
+<!--                        </configuration>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
+<!--        &lt;!&ndash; Enables all sources, useful for IDE build or releases &ndash;&gt;-->
+<!--        <profile>-->
+<!--            <id>oracle-all</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>com.oracle.instantclient</groupId>-->
+<!--                    <artifactId>xstreams</artifactId>-->
+<!--                    <scope>provided</scope>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                        <configuration combine.self="override">-->
+<!--                            <includes>-->
+<!--                                <include>**</include>-->
+<!--                            </includes>-->
+<!--                        </configuration>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>assembly</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>com.oracle.instantclient</groupId>-->
+<!--                    <artifactId>xstreams</artifactId>-->
+<!--                    <scope>provided</scope>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                        <configuration combine.self="override">-->
+<!--                            &lt;!&ndash; include xstream back into the module on assembly builds &ndash;&gt;-->
+<!--                            <includes>-->
+<!--                                <include>**</include>-->
+<!--                            </includes>-->
+<!--                        </configuration>-->
+<!--                    </plugin>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-assembly-plugin</artifactId>-->
+<!--                        <dependencies>-->
+<!--                            <dependency>-->
+<!--                                <groupId>io.debezium</groupId>-->
+<!--                                <artifactId>debezium-assembly-descriptors</artifactId>-->
+<!--                                <version>${project.version}</version>-->
+<!--                            </dependency>-->
+<!--                        </dependencies>-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <id>default</id>-->
+<!--                                <phase>package</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>single</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <finalName>${project.artifactId}-${project.version}</finalName>-->
+<!--                                    <attach>true</attach>  &lt;!&ndash; we want attach & deploy these to Maven &ndash;&gt;-->
+<!--                                    <descriptorRefs>-->
+<!--                                        <descriptorRef>${connector.assembly.ref}</descriptorRef>-->
+<!--                                    </descriptorRefs>-->
+<!--                                    <tarLongFileMode>posix</tarLongFileMode>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>quick</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--                <property>-->
+<!--                    <name>quick</name>-->
+<!--                </property>-->
+<!--            </activation>-->
+<!--            <properties>-->
+<!--                <skipITs>true</skipITs>-->
+<!--                <docker.skip>true</docker.skip>-->
+<!--            </properties>-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>oracle-docker</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                      <groupId>io.fabric8</groupId>-->
+<!--                      <artifactId>docker-maven-plugin</artifactId>-->
+<!--                      <configuration>-->
+<!--                        <watchInterval>500</watchInterval>-->
+<!--                        <logDate>default</logDate>-->
+<!--                        <verbose>true</verbose>-->
+<!--                        &lt;!&ndash;autoPull>always</autoPull&ndash;&gt;-->
+<!--                        <images>-->
+<!--                          &lt;!&ndash; A container for the data server replica set &ndash;&gt;-->
+<!--                          <image>-->
+<!--                            <name>quay.io/rh_integration/dbz-oracle:${version.oracle.server}</name>-->
+<!--                            <alias>oracle1</alias>-->
+<!--                            <run>-->
+<!--                              <namingStrategy>alias</namingStrategy>-->
+<!--                              <ports>-->
+<!--                                <port>1521:1521</port> -->
+<!--                              </ports>-->
+<!--                              <log>-->
+<!--                                <prefix>oracle1</prefix>-->
+<!--                                <enabled>true</enabled>-->
+<!--                                <color>yellow</color>-->
+<!--                              </log>-->
+<!--                              <wait>-->
+<!--                                <log>DONE: Executing user defined scripts</log>-->
+<!--                                <time>120000</time> &lt;!&ndash; 2 minutes max &ndash;&gt;-->
+<!--                              </wait>-->
+<!--                            </run>-->
+<!--                          </image>-->
+<!--                        </images>-->
+<!--                      </configuration>-->
+<!--                      &lt;!&ndash;-->
+<!--                      Connect this plugin to the maven lifecycle around the integration-test phase:-->
+<!--                      start the container in pre-integration-test and stop it in post-integration-test.-->
+<!--                      &ndash;&gt;-->
+<!--                      <executions>-->
+<!--                        <execution>-->
+<!--                          <id>start</id>-->
+<!--                          <phase>pre-integration-test</phase>-->
+<!--                          <goals>-->
+<!--                            <goal>build</goal>-->
+<!--                            <goal>start</goal>-->
+<!--                          </goals>-->
+<!--                        </execution>-->
+<!--                        <execution>-->
+<!--                          <id>stop</id>-->
+<!--                          <phase>post-integration-test</phase>-->
+<!--                          <goals>-->
+<!--                            <goal>stop</goal>-->
+<!--                          </goals>-->
+<!--                        </execution>-->
+<!--                      </executions>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
+<!--        &lt;!&ndash; This profile should be used for testing connector with Infinispan only &ndash;&gt;-->
+<!--        <profile>-->
+<!--            <id>infinispan-buffer</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <properties>-->
+<!--                <log.mining.buffer.type.name>infinispan</log.mining.buffer.type.name>-->
+<!--            </properties>-->
+<!--            &lt;!&ndash; todo: when using this profile, enforce oracle-xstream being mutually exclusive &ndash;&gt;-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>infinispan-buffer-remote</id>-->
+<!--            <activation>-->
+<!--                <activeByDefault>false</activeByDefault>-->
+<!--            </activation>-->
+<!--            <properties>-->
+<!--                <log.mining.buffer.type.name>infinispan_remote</log.mining.buffer.type.name>-->
+<!--            </properties>-->
+<!--            &lt;!&ndash; todo: when using this profile, enforce oracle-xstream being mutually exclusive &ndash;&gt;-->
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>io.fabric8</groupId>-->
+<!--                        <artifactId>docker-maven-plugin</artifactId>-->
+<!--                        <configuration>-->
+<!--                            <watchInterval>500</watchInterval>-->
+<!--                            <logDate>default</logDate>-->
+<!--                            <verbose>true</verbose>-->
+<!--                            <images>-->
+<!--                                <image>-->
+<!--                                    &lt;!&ndash; A docker image using Infinispan &ndash;&gt;-->
+<!--                                    <name>${oracle.infinispan.image}</name>-->
+<!--                                    <run>-->
+<!--                                        <namingStrategy>none</namingStrategy>-->
+<!--                                        <env>-->
+<!--                                            <USER>${oracle.infinispan.user}</USER>-->
+<!--                                            <PASS>${oracle.infinispan.password}</PASS>-->
+<!--                                        </env>-->
+<!--                                        <ports>-->
+<!--                                            <port>${oracle.infinispan.port}:11222</port>-->
+<!--                                        </ports>-->
+<!--                                        <log>-->
+<!--                                            <prefix>infinispan</prefix>-->
+<!--                                            <enabled>${docker.showLogs}</enabled>-->
+<!--                                            <color>green</color>-->
+<!--                                        </log>-->
+<!--                                        <wait>-->
+<!--                                            <time>60000</time> &lt;!&ndash; 60 seconds max &ndash;&gt;-->
+<!--                                            <log>Infinispan Server [0-9a-zA-z.]* started</log>-->
+<!--                                        </wait>-->
+<!--                                    </run>-->
+<!--                                </image>-->
+<!--                            </images>-->
+<!--                        </configuration>-->
+<!--                        &lt;!&ndash;-->
+<!--                        Connect this plugin to the maven lifecycle around the integration-test phase:-->
+<!--                        start the container in pre-integration-test and stop it in post-integration-test.-->
+<!--                        &ndash;&gt;-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <id>start</id>-->
+<!--                                <phase>pre-integration-test</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>start</goal>-->
+<!--                                </goals>-->
+<!--                            </execution>-->
+<!--                            <execution>-->
+<!--                                <id>stop</id>-->
+<!--                                <phase>post-integration-test</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>stop</goal>-->
+<!--                                </goals>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
+<!--        </profile>-->
+<!--    </profiles>-->
+</project>

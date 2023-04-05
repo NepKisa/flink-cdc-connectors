@@ -49,13 +49,13 @@ under the License.
 
         <dependency>
             <groupId>io.debezium</groupId>
-            <artifactId>debezium-core-1.6.4</artifactId>
+            <artifactId>debezium-core-1.9.5</artifactId>
             <version>${debezium.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.debezium</groupId>
-            <artifactId>debezium-connector-oracle-1.6.4</artifactId>
+            <artifactId>debezium-connector-oracle-1.9.5</artifactId>
             <version>${debezium.version}</version>
         </dependency>
 
