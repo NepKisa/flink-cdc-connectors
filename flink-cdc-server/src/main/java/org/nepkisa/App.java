@@ -3,6 +3,7 @@ package org.nepkisa;
 import com.ververica.cdc.connectors.base.options.StartupOptions;
 import com.ververica.cdc.connectors.oracle.OracleSource;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
+import io.debezium.connector.oracle.logminer.RocksDbCache;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 
@@ -56,7 +57,12 @@ public class App {
 //        );
 
         env.addSource(sourceFunction).print(); // use parallelism 1 for sink to keep message ordering
-
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                RocksDbCache.close();
+            }
+        }));
         try {
             env.execute();
         } catch (Exception e) {

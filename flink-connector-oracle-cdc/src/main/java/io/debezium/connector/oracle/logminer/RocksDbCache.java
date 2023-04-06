@@ -20,7 +20,7 @@ public class RocksDbCache {
     // that determines the behaviour of the database.
     private static Options options = new Options().setCreateIfMissing(true);
     private static RocksDB db;
-    private static String path;
+    private static String path=System.getProperty("rocksdbPath");
     private static Map<String, Integer> counter = new HashMap<>();
 
     static {
@@ -80,6 +80,7 @@ public class RocksDbCache {
     //Deserialized classes need implements Serializable recursively
     private static Object byteToObject(byte[] bytes) {
         Object obj = null;
+        if (bytes == null || bytes.length == 0) return obj;
         try {
             //bytearray to object
             ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
@@ -92,7 +93,6 @@ public class RocksDbCache {
         }
         return obj;
     }
-
 
     public static byte[] objectToByte(Object obj) {
         if (obj == null) return null;

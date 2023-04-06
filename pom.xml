@@ -102,6 +102,13 @@ under the License.
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.openjfx/javafx-base -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>17.0.2</version>
+        </dependency>
+
         <!-- Apache Flink dependencies -->
         <!-- These dependencies are provided, because they should not be packaged into the JAR file. -->
         <dependency>
