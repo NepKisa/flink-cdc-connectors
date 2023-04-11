@@ -5,12 +5,14 @@
  */
 package io.debezium.connector.oracle.logminer.events;
 
+import java.io.Serializable;
+
 /**
  * Represents all supported event types that are loaded from Oracle LogMiner.
  *
  * @author Chris Cranford
  */
-public enum EventType {
+public enum EventType implements Serializable {
     INSERT(1),
     DELETE(2),
     UPDATE(3),

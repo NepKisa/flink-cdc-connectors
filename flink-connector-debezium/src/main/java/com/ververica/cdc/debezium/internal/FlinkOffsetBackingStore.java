@@ -100,7 +100,7 @@ public class FlinkOffsetBackingStore implements OffsetBackingStore {
                         keyConverter,
                         valueConverter);
 
-        offsetWriter.offset(debeziumOffset.sourcePartition, debeziumOffset.sourceOffset);
+        offsetWriter.offset((Map<String, Object>) debeziumOffset.sourcePartition, (Map<String, Object>) debeziumOffset.sourceOffset);
 
         // flush immediately
         if (!offsetWriter.beginFlush()) {

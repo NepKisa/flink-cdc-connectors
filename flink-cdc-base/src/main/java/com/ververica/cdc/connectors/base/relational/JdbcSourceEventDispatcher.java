@@ -22,6 +22,7 @@ import com.ververica.cdc.connectors.base.source.meta.wartermark.WatermarkEvent;
 import com.ververica.cdc.connectors.base.source.meta.wartermark.WatermarkKind;
 import io.debezium.config.CommonConnectorConfig;
 import io.debezium.connector.base.ChangeEventQueue;
+import io.debezium.connector.oracle.OraclePartition;
 import io.debezium.document.DocumentWriter;
 import io.debezium.pipeline.DataChangeEvent;
 import io.debezium.pipeline.EventDispatcher;
@@ -57,7 +58,7 @@ import java.util.Map;
  *     this is useful for downstream to deserialize the {@link HistoryRecord} back.
  * </pre>
  */
-public class JdbcSourceEventDispatcher extends EventDispatcher<TableId> {
+public class JdbcSourceEventDispatcher extends EventDispatcher<OraclePartition, TableId> {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceEventDispatcher.class);
 
     public static final String HISTORY_RECORD_FIELD = "historyRecord";
@@ -130,18 +131,18 @@ public class JdbcSourceEventDispatcher extends EventDispatcher<TableId> {
         return queue;
     }
 
-    @Override
-    public void dispatchSchemaChangeEvent(
-            TableId dataCollectionId, SchemaChangeEventEmitter schemaChangeEventEmitter)
-            throws InterruptedException {
-        if (dataCollectionId != null && !filter.isIncluded(dataCollectionId)) {
-            if (historizedSchema == null || historizedSchema.storeOnlyCapturedTables()) {
-                LOG.trace("Filtering schema change event for {}", dataCollectionId);
-                return;
-            }
-        }
-        schemaChangeEventEmitter.emitSchemaChangeEvent(new SchemaChangeEventReceiver());
-    }
+//    @Override
+//    public void dispatchSchemaChangeEvent(
+//            TableId dataCollectionId, SchemaChangeEventEmitter schemaChangeEventEmitter)
+//            throws InterruptedException {
+//        if (dataCollectionId != null && !filter.isIncluded(dataCollectionId)) {
+//            if (historizedSchema == null || historizedSchema.storeOnlyCapturedTables()) {
+//                LOG.trace("Filtering schema change event for {}", dataCollectionId);
+//                return;
+//            }
+//        }
+//        schemaChangeEventEmitter.emitSchemaChangeEvent(new SchemaChangeEventReceiver());
+//    }
 
     @Override
     public void dispatchSchemaChangeEvent(
@@ -169,7 +170,9 @@ public class JdbcSourceEventDispatcher extends EventDispatcher<TableId> {
         schemaChangeEventEmitter.emitSchemaChangeEvent(new SchemaChangeEventReceiver());
     }
 
-    /** A {@link SchemaChangeEventEmitter.Receiver} implementation for {@link SchemaChangeEvent}. */
+    /**
+     * A {@link SchemaChangeEventEmitter.Receiver} implementation for {@link SchemaChangeEvent}.
+     */
     private final class SchemaChangeEventReceiver implements SchemaChangeEventEmitter.Receiver {
 
         private Struct schemaChangeRecordKey(SchemaChangeEvent event) {

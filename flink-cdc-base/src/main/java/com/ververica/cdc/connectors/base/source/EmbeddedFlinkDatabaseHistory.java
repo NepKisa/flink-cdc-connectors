@@ -18,6 +18,7 @@ package com.ververica.cdc.connectors.base.source;
 
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitState;
 import io.debezium.config.Configuration;
+import io.debezium.pipeline.spi.Offsets;
 import io.debezium.relational.TableId;
 import io.debezium.relational.Tables;
 import io.debezium.relational.ddl.DdlParser;
@@ -100,6 +101,24 @@ public class EmbeddedFlinkDatabaseHistory implements DatabaseHistory {
     @Override
     public void recover(
             Map<String, ?> source, Map<String, ?> position, Tables schema, DdlParser ddlParser) {
+        listener.recoveryStarted();
+        for (TableChange tableChange : tableSchemas.values()) {
+            schema.overwriteTable(tableChange.getTable());
+        }
+        listener.recoveryStopped();
+    }
+
+    @Override
+    public void recover(Offsets<?, ?> offsets, Tables schema, DdlParser ddlParser) {
+        listener.recoveryStarted();
+        for (TableChange tableChange : tableSchemas.values()) {
+            schema.overwriteTable(tableChange.getTable());
+        }
+        listener.recoveryStopped();
+    }
+
+    @Override
+    public void recover(Map<Map<String, ?>, Map<String, ?>> offsets, Tables schema, DdlParser ddlParser) {
         listener.recoveryStarted();
         for (TableChange tableChange : tableSchemas.values()) {
             schema.overwriteTable(tableChange.getTable());

@@ -16,6 +16,8 @@
 
 package com.ververica.cdc.connectors.oracle.source.reader.fetch;
 
+import io.debezium.connector.oracle.*;
+import io.debezium.pipeline.spi.Offsets;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.ververica.cdc.connectors.base.config.JdbcSourceConfig;
@@ -29,16 +31,6 @@ import com.ververica.cdc.connectors.oracle.source.config.OracleSourceConfig;
 import com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset;
 import com.ververica.cdc.connectors.oracle.source.utils.OracleUtils;
 import io.debezium.connector.base.ChangeEventQueue;
-import io.debezium.connector.oracle.OracleChangeEventSourceMetricsFactory;
-import io.debezium.connector.oracle.OracleConnection;
-import io.debezium.connector.oracle.OracleConnectorConfig;
-import io.debezium.connector.oracle.OracleDatabaseSchema;
-import io.debezium.connector.oracle.OracleErrorHandler;
-import io.debezium.connector.oracle.OracleOffsetContext;
-import io.debezium.connector.oracle.OracleStreamingChangeEventSourceMetrics;
-import io.debezium.connector.oracle.OracleTaskContext;
-import io.debezium.connector.oracle.OracleTopicSelector;
-import io.debezium.connector.oracle.SourceInfo;
 import io.debezium.connector.oracle.logminer.LogMinerOracleOffsetContextLoader;
 import io.debezium.data.Envelope;
 import io.debezium.pipeline.DataChangeEvent;
@@ -60,7 +52,9 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.Map;
 
-/** The context for fetch task that fetching data of snapshot split from Oracle data source. */
+/**
+ * The context for fetch task that fetching data of snapshot split from Oracle data source.
+ */
 public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
 
     private static final Logger LOG = LoggerFactory.getLogger(OracleSourceFetchTaskContext.class);
@@ -71,6 +65,7 @@ public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
     private OracleDatabaseSchema databaseSchema;
     private OracleTaskContext taskContext;
     private OracleOffsetContext offsetContext;
+    private OraclePartition partition;
     private SnapshotChangeEventSourceMetrics snapshotChangeEventSourceMetrics;
     private OracleStreamingChangeEventSourceMetrics streamingChangeEventSourceMetrics;
     private TopicSelector<TableId> topicSelector;
@@ -102,8 +97,8 @@ public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
         this.offsetContext =
                 loadStartingOffsetState(
                         new LogMinerOracleOffsetContextLoader(connectorConfig), sourceSplitBase);
-        validateAndLoadDatabaseHistory(offsetContext, databaseSchema);
-
+        this.partition = new OraclePartition(connectorConfig.getLogicalName());
+        validateAndLoadDatabaseHistory(partition, offsetContext, databaseSchema);
         this.taskContext = new OracleTaskContext(connectorConfig, databaseSchema);
         final int queueSize =
                 sourceSplitBase.isSnapshotSplit()
@@ -144,7 +139,7 @@ public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
                 (OracleStreamingChangeEventSourceMetrics)
                         changeEventSourceMetricsFactory.getStreamingMetrics(
                                 taskContext, queue, metadataProvider);
-        this.errorHandler = new OracleErrorHandler(connectorConfig.getLogicalName(), queue);
+        this.errorHandler = new OracleErrorHandler(connectorConfig, queue);
     }
 
     @Override
@@ -209,7 +204,9 @@ public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
         return OracleUtils.getRedoLogPosition(sourceRecord);
     }
 
-    /** Loads the connector's persistent offset (if present) via the given loader. */
+    /**
+     * Loads the connector's persistent offset (if present) via the given loader.
+     */
     private OracleOffsetContext loadStartingOffsetState(
             OffsetContext.Loader loader, SourceSplitBase oracleSplit) {
         Offset offset =
@@ -223,13 +220,15 @@ public class OracleSourceFetchTaskContext extends JdbcSourceFetchTaskContext {
         return oracleOffsetContext;
     }
 
-    private void validateAndLoadDatabaseHistory(
-            OracleOffsetContext offset, OracleDatabaseSchema schema) {
+    private void validateAndLoadDatabaseHistory(OraclePartition partition,
+                                                OracleOffsetContext offset, OracleDatabaseSchema schema) {
         schema.initializeStorage();
-        schema.recover(offset);
+        schema.recover(Offsets.of(partition, offset));
     }
 
-    /** Copied from debezium for accessing here. */
+    /**
+     * Copied from debezium for accessing here.
+     */
     public static class OracleEventMetadataProvider implements EventMetadataProvider {
         @Override
         public Instant getEventTimestamp(

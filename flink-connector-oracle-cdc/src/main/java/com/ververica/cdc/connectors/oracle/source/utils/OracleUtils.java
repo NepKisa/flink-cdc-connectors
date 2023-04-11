@@ -16,17 +16,12 @@
 
 package com.ververica.cdc.connectors.oracle.source.utils;
 
+import io.debezium.connector.oracle.*;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset;
 import io.debezium.config.Configuration;
-import io.debezium.connector.oracle.OracleConnection;
-import io.debezium.connector.oracle.OracleConnectorConfig;
-import io.debezium.connector.oracle.OracleDatabaseSchema;
-import io.debezium.connector.oracle.OracleTopicSelector;
-import io.debezium.connector.oracle.OracleValueConverters;
-import io.debezium.connector.oracle.StreamingAdapter;
 import io.debezium.jdbc.JdbcConnection;
 import io.debezium.relational.Column;
 import io.debezium.relational.Table;
@@ -49,10 +44,13 @@ import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.rowToArr
 import static org.apache.flink.table.api.DataTypes.FIELD;
 import static org.apache.flink.table.api.DataTypes.ROW;
 
-/** Utils to prepare Oracle SQL statement. */
+/**
+ * Utils to prepare Oracle SQL statement.
+ */
 public class OracleUtils {
 
-    private OracleUtils() {}
+    private OracleUtils() {
+    }
 
     public static Object[] queryMinMax(JdbcConnection jdbc, TableId tableId, String columnName)
             throws SQLException {
@@ -259,7 +257,9 @@ public class OracleUtils {
         return getSplitType(primaryKeys.get(0));
     }
 
-    /** Creates a new {@link OracleDatabaseSchema} to monitor the latest oracle database schemas. */
+    /**
+     * Creates a new {@link OracleDatabaseSchema} to monitor the latest oracle database schemas.
+     */
     public static OracleDatabaseSchema createOracleDatabaseSchema(
             OracleConnectorConfig dbzOracleConfig) {
         TopicSelector<TableId> topicSelector = OracleTopicSelector.defaultSelector(dbzOracleConfig);
@@ -271,15 +271,20 @@ public class OracleUtils {
                 new OracleValueConverters(dbzOracleConfig, oracleConnection);
         StreamingAdapter.TableNameCaseSensitivity tableNameCaseSensitivity =
                 dbzOracleConfig.getAdapter().getTableNameCaseSensitivity(oracleConnection);
+        OracleValueConverters valueConverters = new OracleValueConverters(dbzOracleConfig, oracleConnection);
+        OracleDefaultValueConverter defaultValueConverter = new OracleDefaultValueConverter(valueConverters, oracleConnection);
         return new OracleDatabaseSchema(
                 dbzOracleConfig,
                 oracleValueConverters,
+                defaultValueConverter,
                 schemaNameAdjuster,
                 topicSelector,
                 tableNameCaseSensitivity);
     }
 
-    /** Creates a new {@link OracleDatabaseSchema} to monitor the latest oracle database schemas. */
+    /**
+     * Creates a new {@link OracleDatabaseSchema} to monitor the latest oracle database schemas.
+     */
     public static OracleDatabaseSchema createOracleDatabaseSchema(
             OracleConnectorConfig dbzOracleConfig, boolean tableIdCaseInsensitive) {
         TopicSelector<TableId> topicSelector = OracleTopicSelector.defaultSelector(dbzOracleConfig);
@@ -292,9 +297,12 @@ public class OracleUtils {
                 tableIdCaseInsensitive
                         ? StreamingAdapter.TableNameCaseSensitivity.SENSITIVE
                         : StreamingAdapter.TableNameCaseSensitivity.INSENSITIVE;
+        OracleValueConverters valueConverters = new OracleValueConverters(dbzOracleConfig, oracleConnection);
+        OracleDefaultValueConverter defaultValueConverter = new OracleDefaultValueConverter(valueConverters, oracleConnection);
         return new OracleDatabaseSchema(
                 dbzOracleConfig,
                 oracleValueConverters,
+                defaultValueConverter,
                 schemaNameAdjuster,
                 topicSelector,
                 tableNameCaseSensitivity);
@@ -360,7 +368,7 @@ public class OracleUtils {
     private static void addPrimaryKeyColumnsToCondition(
             RowType pkRowType, StringBuilder sql, String predicate) {
         for (Iterator<String> fieldNamesIt = pkRowType.getFieldNames().iterator();
-                fieldNamesIt.hasNext(); ) {
+             fieldNamesIt.hasNext(); ) {
             sql.append(fieldNamesIt.next()).append(predicate);
             if (fieldNamesIt.hasNext()) {
                 sql.append(" AND ");
@@ -371,7 +379,7 @@ public class OracleUtils {
     private static String getPrimaryKeyColumnsProjection(RowType pkRowType) {
         StringBuilder sql = new StringBuilder();
         for (Iterator<String> fieldNamesIt = pkRowType.getFieldNames().iterator();
-                fieldNamesIt.hasNext(); ) {
+             fieldNamesIt.hasNext(); ) {
             sql.append(fieldNamesIt.next());
             if (fieldNamesIt.hasNext()) {
                 sql.append(" , ");
@@ -383,7 +391,7 @@ public class OracleUtils {
     private static String getMaxPrimaryKeyColumnsProjection(RowType pkRowType) {
         StringBuilder sql = new StringBuilder();
         for (Iterator<String> fieldNamesIt = pkRowType.getFieldNames().iterator();
-                fieldNamesIt.hasNext(); ) {
+             fieldNamesIt.hasNext(); ) {
             sql.append("MAX(" + fieldNamesIt.next() + ")");
             if (fieldNamesIt.hasNext()) {
                 sql.append(" , ");

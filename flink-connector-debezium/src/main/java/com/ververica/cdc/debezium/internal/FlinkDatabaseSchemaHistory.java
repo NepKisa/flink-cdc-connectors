@@ -18,6 +18,7 @@ package com.ververica.cdc.debezium.internal;
 
 import com.ververica.cdc.debezium.history.FlinkJsonTableChangeSerializer;
 import io.debezium.config.Configuration;
+import io.debezium.pipeline.spi.Offsets;
 import io.debezium.relational.TableId;
 import io.debezium.relational.Tables;
 import io.debezium.relational.ddl.DdlParser;
@@ -147,6 +148,31 @@ public class FlinkDatabaseSchemaHistory implements DatabaseHistory {
         }
         listener.recoveryStopped();
     }
+
+    @Override
+    public void recover(Offsets<?, ?> offsets, Tables schema, DdlParser ddlParser) {
+        listener.recoveryStarted();
+        for (SchemaRecord record : latestTables.values()) {
+            TableChange tableChange =
+                    FlinkJsonTableChangeSerializer.fromDocument(
+                            record.getTableChangeDoc(), useCatalogBeforeSchema);
+            schema.overwriteTable(tableChange.getTable());
+        }
+        listener.recoveryStopped();
+    }
+
+    @Override
+    public void recover(Map<Map<String, ?>, Map<String, ?>> offsets, Tables schema, DdlParser ddlParser) {
+        listener.recoveryStarted();
+        for (SchemaRecord record : latestTables.values()) {
+            TableChange tableChange =
+                    FlinkJsonTableChangeSerializer.fromDocument(
+                            record.getTableChangeDoc(), useCatalogBeforeSchema);
+            schema.overwriteTable(tableChange.getTable());
+        }
+        listener.recoveryStopped();
+    }
+
 
     @Override
     public void stop() {

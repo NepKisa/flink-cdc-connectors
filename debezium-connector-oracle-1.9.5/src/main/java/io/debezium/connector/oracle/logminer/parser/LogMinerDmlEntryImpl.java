@@ -5,6 +5,7 @@
  */
 package io.debezium.connector.oracle.logminer.parser;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -15,7 +16,7 @@ import io.debezium.connector.oracle.logminer.processor.infinispan.marshalling.Vi
  * This class holds one parsed DML LogMiner record details
  *
  */
-public class LogMinerDmlEntryImpl implements LogMinerDmlEntry {
+public class LogMinerDmlEntryImpl implements LogMinerDmlEntry, Serializable {
 
     private final EventType eventType;
     private final Object[] newValues;

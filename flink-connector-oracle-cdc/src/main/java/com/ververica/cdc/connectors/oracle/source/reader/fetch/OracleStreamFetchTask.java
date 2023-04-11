@@ -24,11 +24,7 @@ import com.ververica.cdc.connectors.base.source.reader.external.FetchTask;
 import com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset;
 import io.debezium.DebeziumException;
 import io.debezium.config.Configuration;
-import io.debezium.connector.oracle.OracleConnection;
-import io.debezium.connector.oracle.OracleConnectorConfig;
-import io.debezium.connector.oracle.OracleDatabaseSchema;
-import io.debezium.connector.oracle.OracleOffsetContext;
-import io.debezium.connector.oracle.OracleStreamingChangeEventSourceMetrics;
+import io.debezium.connector.oracle.*;
 import io.debezium.connector.oracle.logminer.LogMinerStreamingChangeEventSource;
 import io.debezium.pipeline.ErrorHandler;
 import io.debezium.pipeline.source.spi.ChangeEventSource;
@@ -41,7 +37,9 @@ import java.util.Map;
 
 import static com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset.NO_STOPPING_OFFSET;
 
-/** The task to work for fetching data of Oracle table stream split. */
+/**
+ * The task to work for fetching data of Oracle table stream split.
+ */
 public class OracleStreamFetchTask implements FetchTask<SourceSplitBase> {
 
     private final StreamSplit split;
@@ -68,8 +66,9 @@ public class OracleStreamFetchTask implements FetchTask<SourceSplitBase> {
                         split);
         RedoLogSplitChangeEventSourceContext changeEventSourceContext =
                 new RedoLogSplitChangeEventSourceContext();
+        OraclePartition partition = new OraclePartition(sourceFetchContext.getDbzConnectorConfig().getLogicalName());
         redoLogSplitReadTask.execute(
-                changeEventSourceContext, sourceFetchContext.getOffsetContext());
+                changeEventSourceContext, partition, sourceFetchContext.getOffsetContext());
     }
 
     @Override
@@ -118,14 +117,15 @@ public class OracleStreamFetchTask implements FetchTask<SourceSplitBase> {
         }
 
         @Override
-        public void execute(ChangeEventSourceContext context, OracleOffsetContext offsetContext) {
+        public void execute(ChangeEventSourceContext context, OraclePartition partition, OracleOffsetContext offsetContext) {
             this.context = context;
-            super.execute(context, offsetContext);
+            super.execute(context, partition, offsetContext);
         }
 
-        @Override
-        public void afterHandleScn(OracleOffsetContext offsetContext) {
-            super.afterHandleScn(offsetContext);
+
+        //@Override
+        public void afterHandleScn(OracleOffsetContext offsetContext,OraclePartition partition) {
+            //super.afterHandleScn(offsetContext);
             // check do we need to stop for fetch binlog for snapshot split.
             if (isBoundedRead()) {
                 final RedoLogOffset currentRedoLogOffset =
@@ -134,8 +134,9 @@ public class OracleStreamFetchTask implements FetchTask<SourceSplitBase> {
                 if (currentRedoLogOffset.isAtOrAfter(redoLogSplit.getEndingOffset())) {
                     // send binlog end event
                     try {
+
                         dispatcher.dispatchWatermarkEvent(
-                                offsetContext.getPartition(),
+                                partition.getSourcePartition(),
                                 redoLogSplit,
                                 currentRedoLogOffset,
                                 WatermarkKind.END);

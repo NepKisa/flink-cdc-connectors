@@ -45,7 +45,7 @@ public class App {
                 .schemaList("neptune") // monitor neptune schema
                 .tableList("neptune.userx") // monitor student table
                 .username("cdcuser")
-                .password("123456")
+                .password("1234567")
                 .debeziumProperties(debeziumProperties)//可兼容debezium的参数
                 .deserializer(new JsonDebeziumDeserializationSchema()) // converts SourceRecord to JSON String
                 .build();

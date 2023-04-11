@@ -25,11 +25,7 @@ import com.ververica.cdc.connectors.base.source.reader.external.FetchTask;
 import com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset;
 import io.debezium.DebeziumException;
 import io.debezium.config.Configuration;
-import io.debezium.connector.oracle.OracleConnection;
-import io.debezium.connector.oracle.OracleConnectorConfig;
-import io.debezium.connector.oracle.OracleDatabaseSchema;
-import io.debezium.connector.oracle.OracleOffsetContext;
-import io.debezium.connector.oracle.OracleValueConverters;
+import io.debezium.connector.oracle.*;
 import io.debezium.connector.oracle.logminer.LogMinerOracleOffsetContextLoader;
 import io.debezium.heartbeat.Heartbeat;
 import io.debezium.pipeline.EventDispatcher;
@@ -38,6 +34,7 @@ import io.debezium.pipeline.source.spi.ChangeEventSource;
 import io.debezium.pipeline.source.spi.SnapshotProgressListener;
 import io.debezium.pipeline.spi.ChangeRecordEmitter;
 import io.debezium.pipeline.spi.OffsetContext;
+import io.debezium.pipeline.spi.Partition;
 import io.debezium.pipeline.spi.SnapshotResult;
 import io.debezium.relational.Column;
 import io.debezium.relational.RelationalSnapshotChangeEventSource;
@@ -69,7 +66,9 @@ import static com.ververica.cdc.connectors.oracle.source.utils.OracleConnectionU
 import static com.ververica.cdc.connectors.oracle.source.utils.OracleUtils.buildSplitScanQuery;
 import static com.ververica.cdc.connectors.oracle.source.utils.OracleUtils.readTableSplitDataStatement;
 
-/** The task to work for fetching data of Oracle table snapshot split. */
+/**
+ * The task to work for fetching data of Oracle table snapshot split.
+ */
 public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
 
     private final SnapshotSplit split;
@@ -91,6 +90,7 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
         return taskRunning;
     }
 
+
     @Override
     public void execute(Context context) throws Exception {
         OracleSourceFetchTaskContext sourceFetchContext = (OracleSourceFetchTaskContext) context;
@@ -106,9 +106,10 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                         split);
         SnapshotSplitChangeEventSourceContext changeEventSourceContext =
                 new SnapshotSplitChangeEventSourceContext();
+        OraclePartition partition = new OraclePartition(snapshotSplitReadTask.connectorConfig.getLogicalName());
         SnapshotResult snapshotResult =
                 snapshotSplitReadTask.execute(
-                        changeEventSourceContext, sourceFetchContext.getOffsetContext());
+                        changeEventSourceContext, partition, sourceFetchContext.getOffsetContext());
 
         final StreamSplit backfillBinlogSplit =
                 createBackfillRedoLogSplit(changeEventSourceContext);
@@ -121,7 +122,7 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
         if (!binlogBackfillRequired) {
             dispatchBinlogEndEvent(
                     backfillBinlogSplit,
-                    ((OracleSourceFetchTaskContext) context).getOffsetContext().getPartition(),
+                    partition.getSourcePartition(),
                     ((OracleSourceFetchTaskContext) context).getDispatcher());
             taskRunning = false;
             return;
@@ -132,6 +133,7 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                     createBackfillRedoLogReadTask(backfillBinlogSplit, sourceFetchContext);
             backfillBinlogReadTask.execute(
                     new SnapshotBinlogSplitChangeEventSourceContext(),
+                    partition,
                     sourceFetchContext.getOffsetContext());
         } else {
             taskRunning = false;
@@ -193,13 +195,17 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                 WatermarkKind.END);
     }
 
-    /** A wrapped task to fetch snapshot split of table. */
-    public static class OracleSnapshotSplitReadTask extends AbstractSnapshotChangeEventSource {
+    /**
+     * A wrapped task to fetch snapshot split of table.
+     */
+    public static class OracleSnapshotSplitReadTask extends AbstractSnapshotChangeEventSource<OraclePartition, OracleOffsetContext> {
 
         private static final Logger LOG =
                 LoggerFactory.getLogger(OracleSnapshotSplitReadTask.class);
 
-        /** Interval for showing a log statement with the progress while scanning a single table. */
+        /**
+         * Interval for showing a log statement with the progress while scanning a single table.
+         */
         private static final Duration LOG_INTERVAL = Duration.ofMillis(10_000);
 
         private final OracleConnectorConfig connectorConfig;
@@ -231,13 +237,11 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
         }
 
         @Override
-        public SnapshotResult execute(
-                ChangeEventSourceContext context, OffsetContext previousOffset)
-                throws InterruptedException {
-            SnapshottingTask snapshottingTask = getSnapshottingTask(previousOffset);
-            final SnapshotContext ctx;
+        public SnapshotResult<OracleOffsetContext> execute(ChangeEventSourceContext context, OraclePartition partition, OracleOffsetContext previousOffset) throws InterruptedException {
+            SnapshottingTask snapshottingTask = getSnapshottingTask(partition, previousOffset);
+            final SnapshotContext<OraclePartition, OracleOffsetContext> ctx;
             try {
-                ctx = prepare(context);
+                ctx = prepare(partition);
             } catch (Exception e) {
                 LOG.error("Failed to initialize snapshot context.", e);
                 throw new RuntimeException(e);
@@ -253,12 +257,7 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
         }
 
         @Override
-        protected SnapshotResult doExecute(
-                ChangeEventSourceContext context,
-                OffsetContext previousOffset,
-                SnapshotContext snapshotContext,
-                SnapshottingTask snapshottingTask)
-                throws Exception {
+        protected SnapshotResult doExecute(ChangeEventSourceContext context, OracleOffsetContext previousOffset, SnapshotContext<OraclePartition, OracleOffsetContext> snapshotContext, SnapshottingTask snapshottingTask) throws Exception {
             final RelationalSnapshotChangeEventSource.RelationalSnapshotContext ctx =
                     (RelationalSnapshotChangeEventSource.RelationalSnapshotContext) snapshotContext;
             ctx.offset = offsetContext;
@@ -268,9 +267,10 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                     "Snapshot step 1 - Determining low watermark {} for split {}",
                     lowWatermark,
                     snapshotSplit);
+            OraclePartition partition = new OraclePartition(connectorConfig.getLogicalName());
             ((SnapshotSplitChangeEventSourceContext) (context)).setLowWatermark(lowWatermark);
             dispatcher.dispatchWatermarkEvent(
-                    offsetContext.getPartition(), snapshotSplit, lowWatermark, WatermarkKind.LOW);
+                    partition.getSourcePartition(), snapshotSplit, lowWatermark, WatermarkKind.LOW);
 
             LOG.info("Snapshot step 2 - Snapshotting data");
             createDataEvents(ctx, snapshotSplit.getTableId());
@@ -281,27 +281,28 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                     highWatermark,
                     snapshotSplit);
             ((SnapshotSplitChangeEventSourceContext) (context)).setHighWatermark(lowWatermark);
+
             dispatcher.dispatchWatermarkEvent(
-                    offsetContext.getPartition(), snapshotSplit, highWatermark, WatermarkKind.HIGH);
+                    snapshotContext.partition.getSourcePartition(), snapshotSplit, highWatermark, WatermarkKind.HIGH);
             return SnapshotResult.completed(ctx.offset);
         }
 
         @Override
-        protected SnapshottingTask getSnapshottingTask(OffsetContext previousOffset) {
+        protected SnapshottingTask getSnapshottingTask(OraclePartition partition, OracleOffsetContext previousOffset) {
             return new SnapshottingTask(false, true);
         }
 
         @Override
-        protected SnapshotContext prepare(ChangeEventSourceContext changeEventSourceContext)
-                throws Exception {
-            return new MySqlSnapshotContext();
+        protected SnapshotContext<OraclePartition, OracleOffsetContext> prepare(OraclePartition partition) throws Exception {
+            return new MySqlSnapshotContext(partition);
         }
+
 
         private static class MySqlSnapshotContext
                 extends RelationalSnapshotChangeEventSource.RelationalSnapshotContext {
 
-            public MySqlSnapshotContext() throws SQLException {
-                super("");
+            public MySqlSnapshotContext(Partition partition) throws SQLException {
+                super(partition, "");
             }
         }
 
@@ -317,7 +318,9 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
             snapshotReceiver.completeSnapshot();
         }
 
-        /** Dispatches the data change events for the records of a single table. */
+        /**
+         * Dispatches the data change events for the records of a single table.
+         */
         private void createDataEventsForTable(
                 RelationalSnapshotChangeEventSource.RelationalSnapshotContext snapshotContext,
                 EventDispatcher.SnapshotReceiver snapshotReceiver,
@@ -343,16 +346,16 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                     selectSql);
 
             try (PreparedStatement selectStatement =
-                            readTableSplitDataStatement(
-                                    jdbcConnection,
-                                    selectSql,
-                                    snapshotSplit.getSplitStart() == null,
-                                    snapshotSplit.getSplitEnd() == null,
-                                    snapshotSplit.getSplitStart(),
-                                    snapshotSplit.getSplitEnd(),
-                                    snapshotSplit.getSplitKeyType().getFieldCount(),
-                                    connectorConfig.getQueryFetchSize());
-                    ResultSet rs = selectStatement.executeQuery()) {
+                         readTableSplitDataStatement(
+                                 jdbcConnection,
+                                 selectSql,
+                                 snapshotSplit.getSplitStart() == null,
+                                 snapshotSplit.getSplitEnd() == null,
+                                 snapshotSplit.getSplitStart(),
+                                 snapshotSplit.getSplitEnd(),
+                                 snapshotSplit.getSplitKeyType().getFieldCount(),
+                                 connectorConfig.getQueryFetchSize());
+                 ResultSet rs = selectStatement.executeQuery()) {
 
                 ColumnUtils.ColumnArray columnArray = ColumnUtils.toArray(rs, table);
                 long rows = 0;
@@ -373,13 +376,11 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
                                 rows,
                                 snapshotSplit.splitId(),
                                 Strings.duration(stop - exportStart));
-                        snapshotProgressListener.rowsScanned(table.id(), rows);
+                        snapshotProgressListener.rowsScanned(snapshotContext.partition, table.id(), rows);
                         logTimer = getTableScanLogTimer();
                     }
-                    dispatcher.dispatchSnapshotEvent(
-                            table.id(),
-                            getChangeRecordEmitter(snapshotContext, table.id(), row),
-                            snapshotReceiver);
+                    dispatcher.dispatchSnapshotEvent((OraclePartition) snapshotContext.partition, table.id(),
+                            getChangeRecordEmitter(snapshotContext, table.id(), row), snapshotReceiver);
                 }
                 LOG.info(
                         "Finished exporting {} records for split '{}', total duration '{}'",
@@ -391,10 +392,12 @@ public class OracleScanFetchTask implements FetchTask<SourceSplitBase> {
             }
         }
 
+
         protected ChangeRecordEmitter getChangeRecordEmitter(
-                SnapshotContext snapshotContext, TableId tableId, Object[] row) {
+                SnapshotContext<OraclePartition, OracleOffsetContext> snapshotContext, TableId tableId, Object[] row) {
             snapshotContext.offset.event(tableId, clock.currentTime());
-            return new SnapshotChangeRecordEmitter(snapshotContext.offset, row, clock);
+
+            return new SnapshotChangeRecordEmitter<>(snapshotContext.partition, snapshotContext.offset, row, clock);
         }
 
         private Threads.Timer getTableScanLogTimer() {

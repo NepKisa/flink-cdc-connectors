@@ -8,6 +8,8 @@ package io.debezium.connector.oracle.logminer.processor.memory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,7 @@ public class MemoryTransaction extends AbstractTransaction {
 
     public MemoryTransaction(String transactionId, Scn startScn, Instant changeTime, String userName) {
         super(transactionId, startScn, changeTime, userName);
-        this.events = new ArrayList<>();
+        this.events = new ArrayList() ;
         start();
     }
 

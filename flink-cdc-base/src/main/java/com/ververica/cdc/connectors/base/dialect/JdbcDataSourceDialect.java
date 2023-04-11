@@ -16,6 +16,7 @@
 
 package com.ververica.cdc.connectors.base.dialect;
 
+import io.debezium.jdbc.JdbcConfiguration;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.util.FlinkRuntimeException;
 
@@ -54,8 +55,8 @@ public interface JdbcDataSourceDialect extends DataSourceDialect<JdbcSourceConfi
     default JdbcConnection openJdbcConnection(JdbcSourceConfig sourceConfig) {
         JdbcConnection jdbc =
                 new JdbcConnection(
-                        sourceConfig.getDbzConfiguration(),
-                        new JdbcConnectionFactory(sourceConfig, getPooledDataSourceFactory()));
+                        JdbcConfiguration.adapt(sourceConfig.getDbzConfiguration()),
+                        new JdbcConnectionFactory(sourceConfig, getPooledDataSourceFactory()),"`", "`");
         try {
             jdbc.connect();
         } catch (Exception e) {

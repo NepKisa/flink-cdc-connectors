@@ -16,6 +16,7 @@
 
 package com.ververica.cdc.connectors.oracle.source.utils;
 
+import io.debezium.jdbc.JdbcConfiguration;
 import org.apache.flink.util.FlinkRuntimeException;
 
 import com.ververica.cdc.connectors.oracle.source.meta.offset.RedoLogOffset;
@@ -36,26 +37,36 @@ import java.util.Set;
 
 import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
-/** Oracle connection Utilities. */
+/**
+ * Oracle connection Utilities.
+ */
 public class OracleConnectionUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(OracleConnectionUtils.class);
 
-    /** Returned by column metadata in Oracle if no scale is set. */
+    /**
+     * Returned by column metadata in Oracle if no scale is set.
+     */
     private static final int ORACLE_UNSET_SCALE = -127;
 
-    /** show current scn sql in oracle. */
+    /**
+     * show current scn sql in oracle.
+     */
     private static final String SHOW_CURRENT_SCN = "SELECT CURRENT_SCN FROM V$DATABASE";
 
-    /** Creates a new {@link OracleConnection}, but not open the connection. */
+    /**
+     * Creates a new {@link OracleConnection}, but not open the connection.
+     */
     public static OracleConnection createOracleConnection(Configuration dbzConfiguration) {
         Configuration configuration = dbzConfiguration.subset(DATABASE_CONFIG_PREFIX, true);
         return new OracleConnection(
-                configuration.isEmpty() ? dbzConfiguration : configuration,
+                JdbcConfiguration.adapt(configuration.isEmpty() ? dbzConfiguration : configuration),
                 OracleConnectionUtils.class::getClassLoader);
     }
 
-    /** Fetch current redoLog offsets in Oracle Server. */
+    /**
+     * Fetch current redoLog offsets in Oracle Server.
+     */
     public static RedoLogOffset currentRedoLogOffset(JdbcConnection jdbc) {
         try {
             return jdbc.queryAndMap(
