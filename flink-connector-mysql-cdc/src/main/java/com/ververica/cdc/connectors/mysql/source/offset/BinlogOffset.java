@@ -16,24 +16,19 @@
 
 package com.ververica.cdc.connectors.mysql.source.offset;
 
+import io.debezium.connector.mysql.GtidSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.VisibleForTesting;
-
-import io.debezium.connector.mysql.GtidSet;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.connect.errors.ConnectException;
 
 import javax.annotation.Nullable;
-
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.ververica.cdc.connectors.mysql.source.offset.BinlogOffsetKind.EARLIEST;
-import static com.ververica.cdc.connectors.mysql.source.offset.BinlogOffsetKind.LATEST;
-import static com.ververica.cdc.connectors.mysql.source.offset.BinlogOffsetKind.NON_STOPPING;
-import static com.ververica.cdc.connectors.mysql.source.offset.BinlogOffsetKind.TIMESTAMP;
+import static com.ververica.cdc.connectors.mysql.source.offset.BinlogOffsetKind.*;
 
 /**
  * A structure describes a fine grained offset in a binlog event including binlog position and gtid

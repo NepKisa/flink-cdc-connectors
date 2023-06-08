@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -72,10 +71,10 @@ public class MemoryTransaction extends AbstractTransaction {
             public boolean removeIf(Predicate<? super LogMinerEvent> filter) {
                 Objects.requireNonNull(filter);
                 boolean removed = false;
-                while (size() > 0) {
-                    LogMinerEvent each = get(0);
+                for (int i = 0; i < size(); i++) {
+                    LogMinerEvent each = get(i);
                     if (filter.test(each)) {
-                        remove(0);
+                        remove(i);
                         removed = true;
                     }
                 }

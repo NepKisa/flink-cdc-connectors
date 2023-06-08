@@ -1,15 +1,14 @@
 package io.debezium.connector.oracle.logminer;
 
+import org.rocksdb.FlushOptions;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Nepkisa
@@ -35,7 +34,28 @@ public class RocksDbCache {
             throw new RuntimeException(e);
         }
     }
+    //delete files
+    public static void deleteDir(File directory){
+        File[] files = directory.listFiles();
+        for (File file : Objects.requireNonNull(files)) {
+            if (file.isDirectory()){
+                deleteDir(file);
+            }else {
+                file.delete();
+            }
+        }
+        directory.delete();
+    }
 
+    // flush rocksdb before close
+    public static void flushRocksDB(){
+        FlushOptions flushOptions = new FlushOptions();
+        try {
+            db.flush(flushOptions);
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        }
+    }
     //TODO where close rocksdb connect?
     public static void close() {
         db.close();

@@ -75,12 +75,12 @@ under the License.
 
         <!-- test dependencies on Debezium -->
 
-        <dependency>
+<!--        <dependency>
             <groupId>com.ververica</groupId>
             <artifactId>flink-connector-test-util</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>io.debezium</groupId>
@@ -180,6 +180,12 @@ under the License.
             <artifactId>json-path</artifactId>
             <version>2.4.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

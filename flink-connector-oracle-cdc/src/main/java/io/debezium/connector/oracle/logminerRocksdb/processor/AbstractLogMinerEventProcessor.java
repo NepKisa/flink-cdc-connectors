@@ -8,6 +8,7 @@ package io.debezium.connector.oracle.logminer.processor;
 import io.debezium.DebeziumException;
 import io.debezium.connector.oracle.*;
 import io.debezium.connector.oracle.logminer.LogMinerChangeRecordEmitter;
+import io.debezium.connector.oracle.logminer.RocksDbCache;
 import io.debezium.connector.oracle.logminer.events.*;
 import io.debezium.connector.oracle.logminer.parser.*;
 import io.debezium.data.Envelope;
@@ -410,12 +411,13 @@ public abstract class AbstractLogMinerEventProcessor<T extends AbstractTransacti
                         return;
                     }
 
-                    final LogMinerEvent event = events.get(i);
+                    final LogMinerEvent event = events.remove(i);
                     LOGGER.trace("Dispatching event {} {}", ++dispatchedEventCount, event.getEventType());
                     commitConsumer.accept(event);
                 }
             }
         }
+        RocksDbCache.getCounter().remove(transactionId);
 
         offsetContext.setEventScn(commitScn);
         if (getTransactionEventCount(transaction) > 0 && !skipExcludedUserName) {
